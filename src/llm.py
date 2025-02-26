@@ -42,3 +42,5 @@ completion = client.beta.chat.completions.parse(
 )
 
 math_reasoning = completion.choices[0].message.parsed
+
+generate_summary(client, i)
