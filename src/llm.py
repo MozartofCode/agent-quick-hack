@@ -6,41 +6,32 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from openai import OpenAI
 
-from langchain_core.messages import HumanMessage
-
 load_dotenv()
 key = os.getenv("OPENAI_API_KEY")
 client = OpenAI()
 
-class Step(BaseModel):
-    explanation: str
-    output: str
+def read_prompt(file_path):
+    with open(file_path, 'r') as file:
+        return file.read().strip()
 
-class MathReasoning(BaseModel):
-    steps: list[Step]
-    final_answer: str
+def generate_sql_query(user_input):
+    prompt_1 = read_prompt('prompt_1.txt')
+    response = client.ChatCompletion.create(
+        model="gpt-4",  # Use the appropriate model
+        messages=[
+            {"role": "system", "content": prompt_1},
+            {"role": "user", "content": user_input}
+        ]
+    )
+    return response['choices'][0]['message']['content']
 
-def generate_summary(input, prompt):
-    message = client.invoke([HumanMessage(
-        content=[{"type": "text", "text": prompt},]
-    )])
-    return message.content
-
-
-
-
-
-i = input("write a prompt")
-
-completion = client.beta.chat.completions.parse(
-    model="gpt-4o-2024-08-06",
-    messages=[
-        {"role": "developer", "content": [{"type":"text", "text":"You are in intelligent AI assistant specializing in converting natural language to a SQL query."}]},
-        {"role": "user", "content": [{"type":"text", "text": i}]}
-    ],
-    response_format=MathReasoning,
-)
-
-math_reasoning = completion.choices[0].message.parsed
-
-generate_summary(client, i)
+def check_sql_vulnerability(sql_query):
+    safety_prompt = read_prompt('safety_prompt.txt')
+    response = client.ChatCompletion.create(
+        model="gpt-4",  # Use the appropriate model
+        messages=[
+            {"role": "system", "content": safety_prompt},
+            {"role": "user", "content": sql_query}
+        ]
+    )
+    return response['choices'][0]['message']['content']
